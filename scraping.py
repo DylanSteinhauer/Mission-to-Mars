@@ -19,6 +19,7 @@ def scrape_all():
         "news_paragraph": news_paragraph,
         "featured_image": featured_image(browser),
         "facts": mars_facts(),
+        "hemispheres": hemisphere_img(browser),
         "last_modified": dt.datetime.now()
     }
 
@@ -96,7 +97,68 @@ def mars_facts():
     # Convert dataframe into HTML format, add bootstrap
     return df.to_html(classes="table table-striped")
 
+def hemisphere_img(browser):
+    # 1. Use browser to visit the URL 
+    url = 'https://marshemispheres.com/'
+    browser.visit(url)
 
+    # 2. Create a list to hold the images and titles.
+    hemisphere_image_urls = []
+    title_lst = []
+    url_lst = []
+    urlFull_img_lst = []
+
+    # 3. Write code to retrieve the image urls and titles for each hemisphere.
+    # Parse the HTML
+    html = browser.html
+    html_soup = soup(html, 'html.parser')
+
+    # Add try/except for error handling
+    try:
+        # Define the sections for scrape
+        section = html_soup.find('div', class_= 'collapsible results')
+        items = section.find_all('div', class_='item')
+
+        # ForLoop in each items
+        for item in items:
+            # Scrape the title
+            title = item.find('h3').text
+            title_lst.append(title)
+            
+            # Scrape the url for the detail page
+            url = f'https://marshemispheres.com/{item.find("a")["href"]}'
+            url_lst.append(url)
+            
+            # Go to the detail page - Use browser to visit the URL 
+            browser.visit(url)
+            
+            # Optional delay for loading the page
+            browser.is_element_present_by_css('div.container', wait_time=1)
+            
+            # Parse the HTML detail page
+            html = browser.html
+            html_soup = soup(html, 'html.parser')
+            
+            # Scrape the full image url
+            section = html_soup.find('div', class_='downloads')
+            url_full_img = f'https://marshemispheres.com/{section.find("a")["href"]}'
+            urlFull_img_lst.append(url_full_img)
+
+        # Add dictionary
+        for url,title in zip(urlFull_img_lst,title_lst):
+            # Create the dictionary
+            dic = {
+                "img_url": url,
+                "title": title
+            }
+            # Add the objet to the list
+            hemisphere_image_urls.append(dic)
+    
+    except AttributeError:
+        return None
+    
+    # 4. Return the list that holds the dictionary of each image url and title.
+    return hemisphere_image_urls
 
 
 if __name__ == "__main__":
